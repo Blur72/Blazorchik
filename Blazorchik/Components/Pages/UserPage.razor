@@ -17,23 +17,44 @@
     }
 
     h3 {
-        color: #8b00ff; 
+        color: #8b00ff;
         margin-bottom: 20px;
     }
 
     .welcome-message {
-        font-size: 1.2rem; 
-        color: #555; 
-        margin-bottom: 30px; 
+        font-size: 1.2rem;
+        color: #555;
+        margin-bottom: 30px;
     }
+
+    .catalog-button {
+        background-color: #8b00ff;
+        border-color: #8b00ff;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        border: none; /* Убираем подчеркивание */
+    }
+
+        .catalog-button:hover {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
 
 </style>
 
 <div class="welcome-container">
     <h3>Добро пожаловать</h3>
     <p class="welcome-message">Мы рады видеть вас на нашей платформе. Здесь вы можете найти много интересного!</p>
+    <NavLink href="/movies" class="catalog-button">Перейти в каталог</NavLink>
 </div>
 
 @code {
 
 }
+
