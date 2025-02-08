@@ -3,6 +3,7 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
+@rendermode InteractiveServer
 
 <style>
     body {
@@ -108,32 +109,26 @@
             }
         </tbody>
     </table>
-        <h4>@((isEditing) ? "Редактировать фильм" : "Добавить новый фильм")</h4>
-    <EditForm Model="newMovie" OnValidSubmit="isEditing ? HandleUpdateMovie : HandleCreateMovie" FormName="movieForm">
+    <h4>@(isEditing ? "Редактировать фильм" : "Добавить новый фильм")</h4>
+    <EditForm Model="newMovie" OnValidSubmit="isEditing ? HandleUpdateMovie : HandleCreateMovie" FormName="form">
         <DataAnnotationsValidator />
         <ValidationSummary />
         <div class="form-group">
-            <label for="Title">Название:</label>
             <InputText id="Title" @bind-Value="newMovie.Title" placeholder="Название" class="form-control" />
         </div>
         <div class="form-group">
-            <label for="Description">Описание:</label>
             <InputTextArea id="Description" @bind-Value="newMovie.Description" placeholder="Описание" class="form-control" />
         </div>
         <div class="form-group">
-            <label for="Genre">Жанр:</label>
             <InputText id="Genre" @bind-Value="newMovie.Genre" placeholder="Жанр" class="form-control" />
         </div>
         <div class="form-group">
-            <label for="ReleaseDate">Дата выхода:</label>
             <InputDate id="ReleaseDate" @bind-Value="newMovie.ReleaseDate" class="form-control" />
         </div>
         <div class="form-group">
-            <label for="Rating">Рейтинг:</label>
             <InputNumber id="Rating" @bind-Value="newMovie.Rating" class="form-control" />
         </div>
         <div class="form-group">
-            <label for="ImageUrl">URL изображения:</label>
             <InputText id="ImageUrl" @bind-Value="newMovie.ImageUrl" placeholder="URL изображения" class="form-control" />
         </div>
         <button type="submit" class="btn btn-primary">@((isEditing) ? "Сохранить" : "Добавить фильм")</button>
@@ -149,16 +144,8 @@
     private Movie newMovie = new Movie();
     private List<Movie> movies = new List<Movie>();
 
-    // Заглушка для проверки прав администратора.  Замените это своей реальной логикой!
-    private bool IsAdmin { get { return true; } } //  !!!! ЗАМЕНИТЬ ЭТО СВОЕЙ ЛОГИКОЙ АВТОРИЗАЦИИ !!!!
-
     protected override async Task OnInitializedAsync()
     {
-        if (!IsAdmin)
-        {
-            NavigationManager.NavigateTo("/"); // Или на другую страницу, куда вы перенаправляете неавторизованных пользователей
-            return;
-        }
         await LoadMovies();
     }
 
@@ -171,14 +158,10 @@
             {
                 movies = await response.Content.ReadFromJsonAsync<List<Movie>>();
             }
-            else
-            {
-                ShowAlert($"Ошибка загрузки фильмов: {response.StatusCode}");
-            }
         }
         catch (Exception ex)
         {
-            ShowAlert($"Ошибка: {ex.Message}");
+            ShowAlert($"Ошибка загрузки фильмов: {ex.Message}");
         }
     }
 
@@ -228,16 +211,7 @@
 
     private void EditMovie(Movie movie)
     {
-        newMovie = new Movie
-            {
-                Id = movie.Id,
-                Title = movie.Title,
-                Description = movie.Description,
-                Genre = movie.Genre,
-                ReleaseDate = movie.ReleaseDate,
-                Rating = movie.Rating,
-                ImageUrl = movie.ImageUrl
-            };
+        newMovie = movie;
         isEditing = true;
     }
 
