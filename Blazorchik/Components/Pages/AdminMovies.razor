@@ -129,7 +129,7 @@
             <InputNumber id="Rating" @bind-Value="newMovie.Rating" class="form-control" />
         </div>
         <div class="form-group">
-            <InputText id="ImageUrl" @bind-Value="newMovie.ImageUrl" placeholder="URL изображения" class="form-control" />
+            <InputFile id="moviePhoto" OnChange="HandleFileSelected" class="form-control" />
         </div>
         <button type="submit" class="btn btn-primary">@((isEditing) ? "Сохранить" : "Добавить фильм")</button>
         @if (isEditing)
@@ -143,10 +143,16 @@
     private bool isEditing = false;
     private Movie newMovie = new Movie();
     private List<Movie> movies = new List<Movie>();
+    private IBrowserFile selectedFile;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadMovies();
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.GetMultipleFiles(1).FirstOrDefault();
     }
 
     private async Task LoadMovies()
@@ -169,6 +175,22 @@
     {
         try
         {
+            if (selectedFile != null)
+            {
+                var filePath = Path.Combine("wwwroot/images", selectedFile.Name);
+
+                if (!System.IO.File.Exists(filePath))
+                {
+                    var stream = selectedFile.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await stream.CopyToAsync(fileStream);
+                    }
+                }
+
+                newMovie.ImageUrl = $"/images/{selectedFile.Name}";
+            }
             var response = await Http.PutAsJsonAsync($"api/Movie/{newMovie.Id}", newMovie);
             if (response.IsSuccessStatusCode)
             {
@@ -191,21 +213,42 @@
     {
         try
         {
-            var response = await Http.PostAsJsonAsync("api/Movie", newMovie);
-            if (response.IsSuccessStatusCode)
+            if (selectedFile != null)
             {
-                await LoadMovies();
-                ResetForm();
+                var filePath = Path.Combine("wwwroot/images", selectedFile.Name);
+
+                if (!System.IO.File.Exists(filePath))
+                {
+                    var stream = selectedFile.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await stream.CopyToAsync(fileStream);
+                    }
+                }
+
+                newMovie.ImageUrl = $"/images/{selectedFile.Name}";
             }
             else
             {
-                var errorMessage = await response.Content.ReadAsStringAsync();
-                ShowAlert($"Ошибка добавления фильма: {errorMessage}");
+                await JS.InvokeVoidAsync("alert", "Пожалуйста, выберите изображение.");
+                return;
+            }
+
+            var response = await Http.PostAsJsonAsync("api/Movie", newMovie);
+            if (response.IsSuccessStatusCode)
+            {
+                ResetForm();
+                await LoadMovies();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Ошибка при добавлении фильма.");
             }
         }
         catch (Exception ex)
         {
-            ShowAlert($"Ошибка: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Произошла ошибка: " + ex.Message);
         }
     }
 
