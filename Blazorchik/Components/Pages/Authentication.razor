@@ -97,6 +97,7 @@
                 {
                     int userId = user.Id;
                     await JS.InvokeVoidAsync("localStorage.setItem", "currentUserId", userId);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "currentUserName", user.Name);
 
                     string userRole = user.Role;
 
