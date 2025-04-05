@@ -6,6 +6,12 @@
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
+@using Blazorchik.StateManager
+@using Fluxor;
+@inject IDispatcher Dispatcher
+@inject IState<UserState> UserState
+<Fluxor.Blazor.Web.StoreInitializer/>
+
 
 <div class="chat-panel-container">
     <h3 class="chat-title">@ChatTitle</h3>
@@ -122,8 +128,6 @@
 
 @code {
     string message = "";
-    string currentUserId = "";
-    string senderName = "";
     [Parameter]
     public string recipientUserIdd { get; set; }
 
@@ -170,7 +174,7 @@
     {
         try
         {
-            messages = await Http.GetFromJsonAsync<List<UserChat>>($"api/UserChat/userchat/{recipientUserIdd}/{currentUserId}");
+            messages = await Http.GetFromJsonAsync<List<UserChat>>($"api/UserChat/userchat/{recipientUserIdd}/{UserState.Value.UserId}");
             InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
@@ -188,11 +192,8 @@
     {
         if (firstRender)
         {
-            currentUserId = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserId");
-            senderName = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserName");
-
             // Проверка на совпадение ID для установки заголовка
-            if (currentUserId == recipientUserIdd)
+            if (UserState.Value.UserId == recipientUserIdd)
             {
                 ChatTitle = "Избранное";
             }
@@ -211,8 +212,8 @@
         {
             var newMessage = new UserChat
                 {
-                    SenderId = currentUserId,
-                    SenderName = senderName,
+                    SenderId = UserState.Value.UserId,
+                    SenderName = UserState.Value.UserName,
                     RecipientId = recipientUserIdd,
                     Message = message,
                     Timestamp = DateTime.UtcNow
@@ -233,7 +234,7 @@
 
                     messages.Add(newMessage);
                     InvokeAsync(StateHasChanged);
-                }
+                } 
                 else
                 {
                     Console.WriteLine($"Ошибка при отправке сообщения через API: {response.StatusCode}");

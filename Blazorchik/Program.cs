@@ -1,4 +1,5 @@
 using Blazorchik.Components;
+using Fluxor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +8,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5082/") });
-
+builder.Services.AddFluxor(option => option.ScanAssemblies(typeof(Program).Assembly));
 
 var app = builder.Build();
 

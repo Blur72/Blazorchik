@@ -6,6 +6,11 @@
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
+@using Blazorchik.StateManager
+@using Fluxor;
+@inject IDispatcher Dispatcher
+@inject IState<UserState> UserState
+<Fluxor.Blazor.Web.StoreInitializer/>
 
 <div class="chat-panel-container">
     <h3 class="chat-title">Общий чат ✉ @movieName</h3>
@@ -207,8 +212,8 @@
     {
         if (firstRender)
         {
-            userId = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserId");
-            userName = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserName");
+            // userId = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserId");
+            // userName = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserName");
             movieName = await JS.InvokeAsync<string>("localStorage.getItem", "titleName");
             StateHasChanged();
         }
@@ -218,32 +223,68 @@
     {
         if (!string.IsNullOrWhiteSpace(message) || selectedFile != null)
         {
+            string imageUrl = null; 
+
             if (selectedFile != null)
             {
-                var filePath = Path.Combine("wwwroot/images", selectedFile.Name);
-
-                using (var stream = selectedFile.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024))
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                try
                 {
-                    await stream.CopyToAsync(fileStream);
-                }
+                    var filePath = Path.Combine("wwwroot/images", selectedFile.Name);
 
-                message += $" [Изображение: {filePath.Replace("wwwroot", "")}]";
+                    using (var stream = selectedFile.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024))
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await stream.CopyToAsync(fileStream);
+                    }
+
+                    imageUrl = filePath.Replace("wwwroot", ""); 
+                    message += $" [Изображение: {imageUrl}]"; 
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка при загрузке файла: {ex.Message}");
+                    return; 
+                }
             }
 
             var newMessage = new ChatMessage
-                {
-                    UserId = userId,
-                    UserName = userName,
-                    Message = message,
-                    Timestamp = DateTime.UtcNow
-                };
+            {
+                UserId = UserState.Value.UserId,
+                MovieId = movieId,
+                UserName = UserState.Value.UserName, 
+                Message = message,
+                Timestamp = DateTime.UtcNow
+            };
 
-            messages.Add(newMessage);
-            InvokeAsync(StateHasChanged);
-            await hubConnection.SendAsync("SendMessageGeneral", movieId, userId, userName, newMessage.Message);
-            message = string.Empty;
-            selectedFile = null;
+            try
+            {
+                // **ОТПРАВКА СООБЩЕНИЯ В БД**
+                var response = await Http.PostAsJsonAsync("api/Chat", newMessage); // Используйте ваш API endpoint для сохранения сообщений
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Сообщение успешно отправлено в БД через API.");
+
+                    // Отправляем сообщение через SignalR Hub (Эту часть оставляем как есть)
+                    await hubConnection.SendAsync("SendMessageGeneral", movieId, newMessage.UserId, newMessage.UserName, newMessage.Message);
+
+                    messages.Add(newMessage); // Добавляем сообщение в локальный список
+                    InvokeAsync(StateHasChanged); // Обновляем UI
+                }
+                else
+                {
+                    Console.WriteLine($"Ошибка при отправке сообщения в БД через API: {response.StatusCode}");
+                    // Обработка ошибки, например, вывод сообщения пользователю
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Исключение при отправке сообщения в БД через API: {ex.Message}");
+                // Обработка исключения, например, вывод сообщения пользователю
+            }
+
+            message = string.Empty; // Очищаем поле ввода сообщения
+            selectedFile = null; // Сбрасываем выбранный файл
         }
     }
 

@@ -4,6 +4,11 @@
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
+@using Blazorchik.StateManager
+@using Fluxor;
+@inject IDispatcher Dispatcher
+@inject IState<UserState> UserState
+<Fluxor.Blazor.Web.StoreInitializer/>
 
 <PageTitle>Counter</PageTitle>
 
@@ -96,8 +101,13 @@
                 if (user != null)
                 {
                     int userId = user.Id;
-                    await JS.InvokeVoidAsync("localStorage.setItem", "currentUserId", userId);
-                    await JS.InvokeVoidAsync("localStorage.setItem", "currentUserName", user.Name);
+
+                    // await JS.InvokeVoidAsync("localStorage.setItem", "currentUserId", userId);
+                    // await JS.InvokeVoidAsync("localStorage.setItem", "currentUserName", user.Name);
+                    Dispatcher.Dispatch(new SetAuthenticatedUserAction(
+                        user.Id.ToString(),
+                        user.Name
+                    ));
 
                     string userRole = user.Role;
 

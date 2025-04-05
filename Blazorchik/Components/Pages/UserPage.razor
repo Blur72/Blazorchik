@@ -1,4 +1,10 @@
 ﻿@page "/userpage"
+@using Blazorchik.StateManager
+@using Fluxor;
+@inject IDispatcher Dispatcher
+@inject IState<UserState> UserState
+<Fluxor.Blazor.Web.StoreInitializer/>
+@rendermode InteractiveServer
 
 <style>
     body {
@@ -50,7 +56,7 @@
 
 <div class="welcome-container">
     <h3>Добро пожаловать</h3>
-    <p class="welcome-message">Мы рады видеть вас на нашей платформе. Здесь вы можете найти много интересного!</p>
+    <p class="welcome-message">Мы рады видеть @UserState.Value.UserName на нашей платформе. Здесь вы можете найти много интересного!</p>
     <NavLink href="/movies" class="catalog-button">Перейти в каталог</NavLink>
 </div>
 

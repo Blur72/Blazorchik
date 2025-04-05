@@ -6,8 +6,6 @@ namespace Blazorchik.Model
     {
         [Key]
         public int Id { get; set; }
-
-        [Required]
         public string MovieId { get; set; } // Идентификатор фильма
 
         [Required]
